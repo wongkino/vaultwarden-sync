@@ -1,0 +1,2 @@
+# Daily sync at 03:00 in container TZ / 每日 03:00（依容器 TZ）同步
+0 3 * * * /app/sync.sh

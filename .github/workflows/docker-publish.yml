@@ -1,0 +1,110 @@
+name: Release and publish (AMD64)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  release-and-build:
+    runs-on: ubuntu-latest
+    # Skip bot release commits / 略過 bot 的 release 提交
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      !startsWith(github.event.head_commit.message, 'chore(release):')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump version & changelog
+        id: ver
+        run: |
+          set -euo pipefail
+          EXISTING="$(git tag --points-at HEAD 'v*' | head -n1 || true)"
+          if [ -n "$EXISTING" ]; then
+            echo "HEAD already tagged ${EXISTING} — skip bump"
+            echo "version=${EXISTING#v}" >> "$GITHUB_OUTPUT"
+            echo "tag=${EXISTING}" >> "$GITHUB_OUTPUT"
+            echo "skip_push=true" >> "$GITHUB_OUTPUT"
+          else
+            chmod +x scripts/bump-version.sh
+            NEW_VERSION="$(./scripts/bump-version.sh | tail -n1)"
+            echo "version=${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+            echo "tag=v${NEW_VERSION}" >> "$GITHUB_OUTPUT"
+            echo "skip_push=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit version files & create tag
+        if: steps.ver.outputs.skip_push != 'true'
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add VERSION CHANGELOG.md
+          if git diff --staged --quiet; then
+            echo "No version file changes (already up to date)"
+          else
+            git commit -m "chore(release): v${{ steps.ver.outputs.version }}"
+          fi
+
+          TAG="${{ steps.ver.outputs.tag }}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists locally"
+          else
+            SECTION="$(awk -v ver="## [${{ steps.ver.outputs.version }}]" '
+              $0 == ver {p=1; print; next}
+              p && /^## \[/ {exit}
+              p {print}
+            ' CHANGELOG.md)"
+            git tag -a "$TAG" -m "Release ${TAG}" -m "$SECTION"
+          fi
+
+          git push origin HEAD:main
+          git push origin "$TAG"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ steps.ver.outputs.version }}
+            type=raw,value=${{ steps.ver.outputs.tag }}
+            type=sha,prefix=sha-
+
+      - name: Build and push (linux/amd64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64
+          build-args: |
+            APP_VERSION=${{ steps.ver.outputs.version }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

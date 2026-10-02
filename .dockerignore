@@ -1,0 +1,10 @@
+.git
+.github
+.gitignore
+.gitattributes
+.env
+.env.example
+*.md
+LICENSE
+_*.sh
+purge-vault.js
