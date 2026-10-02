@@ -3,6 +3,16 @@ name: Release and publish (AMD64)
 on:
   push:
     branches: [main]
+    # Only app/image sources trigger a version bump + build
+    # 僅應用／映像相關檔案變更才升版並建置
+    paths:
+      - Dockerfile
+      - sync.sh
+      - entrypoint.sh
+      - i18n.sh
+      - delete-ciphers.js
+      - crontab
+      - VERSION
   workflow_dispatch:
 
 permissions:

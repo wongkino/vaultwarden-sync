@@ -5,8 +5,8 @@ All notable changes to this project are documented here.
 
 Format / 格式: based on [Keep a Changelog](https://keepachangelog.com/).
 Versioning / 版本: [Semantic Versioning](https://semver.org/) (`MAJOR.MINOR.PATCH`).
-Automation / 自動化: every push to `main` bumps the patch version, prepends release notes from commits since the previous tag, then builds & pushes the `linux/amd64` image to GHCR.
-每次推送到 `main` 會自動遞增 patch、依提交紀錄寫入更新詳情，並建置推送 `linux/amd64` 映像至 GHCR。
+Automation / 自動化: pushes that change app/image sources bump the patch version, prepend release notes from commits since the previous tag, then build & push the `linux/amd64` image to GHCR. Docs / compose / CI-only changes do not bump.
+僅應用／映像原始檔變更會自動遞增 patch、依提交紀錄寫入更新詳情，並建置推送 `linux/amd64` 映像至 GHCR；文件／compose／純 CI 變更不升版。
 
 ## [1.0.0] - 2026-10-02
 

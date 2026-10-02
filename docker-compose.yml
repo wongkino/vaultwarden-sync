@@ -1,8 +1,7 @@
 services:
-  # Vaultwarden → Vaultwarden daily sync / Vaultwarden 每日同步
+  # Deploy from GHCR image (no local build) / 使用 GHCR 映像部署（無需本機建置）
   vaultwarden-sync:
     image: ghcr.io/wongkino/vaultwarden-sync:latest
-    build: .
     container_name: vaultwarden-sync
     restart: unless-stopped
     env_file:

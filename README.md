@@ -12,8 +12,10 @@ License / 授權：[MIT License](LICENSE) · Version / 版本：見 [`VERSION`](
 ## Versioning / 版本機制
 
 - Current / 目前：`v1.0.0`
-- Every push to `main` automatically：bump patch (`1.0.0` → `1.0.1` …)、prepend commit subjects into `CHANGELOG.md`、create tag `vX.Y.Z`、build & push **linux/amd64** image to GHCR
-  每次推送到 `main` 會自動：遞增 patch、把提交訊息寫入 `CHANGELOG.md`、建立 tag、建置並推送 **linux/amd64** 映像至 GHCR
+- Version bumps **only** when app/image sources change (`Dockerfile`, `sync.sh`, `entrypoint.sh`, `i18n.sh`, `delete-ciphers.js`, `crontab`, `VERSION`). Docs, compose, examples, and CI config do **not** bump.
+  **僅**應用／映像原始檔變更才升版；文件、`docker-compose.yml`、範例、CI 設定**不會**升版。
+- On those pushes: bump patch → update `CHANGELOG.md` → tag `vX.Y.Z` → build & push **linux/amd64** to GHCR
+  符合條件的推送會：遞增 patch → 更新 `CHANGELOG.md` → 打 tag → 建置並推送 **linux/amd64** 至 GHCR
 - Image tags / 映像標籤：`latest`、`1.0.0`、`v1.0.0`、`sha-…`
 
 ## Files / 檔案清單
@@ -55,20 +57,7 @@ License / 授權：[MIT License](LICENSE) · Version / 版本：見 [`VERSION`](
    - `LANG` — `en` or `zh` for logs & Apprise; **omit or leave empty for English** / 日誌與通知語言；**不填則預設英文**
    - API keys: Web vault → Account Settings → Security → API Key / 網頁版「帳戶設定 → 安全性 → API Key」
 
-3. Start (either) / 啟動（二選一）：
-
-   **Local build / 本機建置：**
-
-   ```bash
-   docker compose up -d --build
-   ```
-
-   **Pull from GHCR / 拉取 GitHub 映像：**
-
-   ```bash
-   docker pull ghcr.io/wongkino/vaultwarden-sync:latest
-   docker compose up -d
-   ```
+3. Deploy with the published image (no local build) / 使用已發布映像部署（無需本機建置）：
 
    If the package is private, log in first / 若套件為 Private，需先登入：
 
@@ -76,6 +65,13 @@ License / 授權：[MIT License](LICENSE) · Version / 版本：見 [`VERSION`](
    echo YOUR_GITHUB_TOKEN | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
    ```
 
+   ```bash
+   docker compose pull
+   docker compose up -d
+   ```
+
+   Optional: pin a version in `docker-compose.yml`, e.g. `image: ghcr.io/wongkino/vaultwarden-sync:v1.0.0`
+   可選：在 `docker-compose.yml` 釘住版本，例如 `…:v1.0.0`
 4. Logs / 查看日誌：
 
    ```bash
